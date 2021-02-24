@@ -10,10 +10,10 @@ wf_set_key(user = "21600", service="cds")
 
 
 dat_levels <- tibble()
-for (yy in 2003:2020) {
+for (yy in 2010:2020) {
   for (mm in 1:12) {
 # Request the pressure level temperature data
-request <- list("dataset"        = "reanalysis-era5-pressure-levels",
+request <- list("dataset_short_name" = "reanalysis-era5-pressure-levels",
                 "product_type"   = "reanalysis",
                 "variable"       = "temperature",
                 "pressure_level" = c("1000","975","950","925","900","875","850"),
@@ -28,6 +28,7 @@ request <- list("dataset"        = "reanalysis-era5-pressure-levels",
                 "target"         = "era5_temps.nc")
 
 # Download the file
+n_retries <- 0
 while(TRUE) {
   err <- try(wf_request(user = "21600",
                         request = request,   
@@ -41,7 +42,7 @@ while(TRUE) {
   n_retries <- n_retries + 1
 }
 
-nc_file <- nc_open("data/era5_temps.nc")
+nc_file <- nc_open("./data/era5_temps.nc")
 lev_ <- ncvar_get(nc_file, "level")
 time_ <- ncvar_get(nc_file, "time")
 temp_ <- ncvar_get(nc_file, "t")
@@ -59,7 +60,7 @@ dat_pl <- tibble(
 )
 
 # Now get surface pressure and wind and boundary layer height
-request <- list("dataset"        = "reanalysis-era5-single-levels",
+request <- list("dataset_short_name"        = "reanalysis-era5-single-levels",
                 "product_type"   = "reanalysis",
                 "variable"       = c("surface_pressure","10m_u_component_of_wind","10m_v_component_of_wind","2m_temperature","boundary_layer_height"),
                 "year"           = as.character(yy),
@@ -86,7 +87,7 @@ while(TRUE) {
   n_retries <- n_retries + 1
 }
 
-nc_file <- nc_open("data/ecmwf_surface.nc")
+nc_file <- nc_open("./data/ecmwf_surface.nc")
 time_ <- ncvar_get(nc_file, "time")
 sp_ <- ncvar_get(nc_file, "sp")
 u10_ <- ncvar_get(nc_file, "u10")
@@ -110,7 +111,7 @@ dat_sp <- tibble(
 
 
 # measure inversions
-window = 5 # Window to drop model temperature around surface
+window = 5 # Window to drop model temperature around surface in hPa
 inversions <- dat_pl %>% 
   bind_rows(dat_sp %>% select(time,lev=sp,temp=t2m)) %>%
   inner_join(dat_sp) %>%
@@ -151,5 +152,5 @@ dat <- dat_levels %>%
   select(-time,
          -local_time)
 
-write_csv(dat, "data/inversion_data.csv")
+write_csv(dat, "./data/inversion_data.csv")
 
