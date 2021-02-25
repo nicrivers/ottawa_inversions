@@ -110,7 +110,8 @@ dat_sp <- tibble(
 )
 
 
-# measure inversions
+# measure inversions 
+# this first measure includes surface temperature in the definition of inversions
 window = 5 # Window to drop model temperature around surface in hPa
 inversions <- dat_pl %>% 
   bind_rows(dat_sp %>% select(time,lev=sp,temp=t2m)) %>%
@@ -135,6 +136,29 @@ inversions <- dat_pl %>%
     v10 = mean(v10),
     blh = mean(blh),
     t2m = mean(t2m)) 
+
+# this second approach does not include surface temperature in defnition of inversions
+inversions_nosurf <- dat_pl %>% 
+  inner_join(dat_sp) %>%
+  filter(lev > sp - 100, # only look at bottom 100 hPa
+         lev <= sp # only look at above surface layers
+         ) %>%
+  arrange(time, desc(lev)) %>%
+  group_by(time) %>%
+  mutate(
+    lapse = lag(temp) - temp,
+    pd = lag(lev) - lev,
+    surf_diff_temp = ifelse(lev != first(lev), first(temp) - temp, NA),
+    surf_diff_pres = ifelse(lev != first(lev), first(lev) - lev, NA)) %>%
+  summarise(
+    # Inversions have negative lapse rates
+    lowest_inv_nosurf = (first(temp) - nth(temp,2)) / (first(lev) - nth(lev,2)),
+    any_inv_nosurf = min(lapse / pd, na.rm=TRUE),
+    surf_inv_nosurf = min(surf_diff_temp / surf_diff_pres, na.rm=TRUE))
+
+inversions <- inner_join(
+  inversions, inversions_nosurf
+)
 
 dat_levels <- bind_rows(dat_levels, inversions)
 
