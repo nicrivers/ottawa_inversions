@@ -4,6 +4,8 @@ library(ncdf4)
 library(lubridate)
 library(ecmwfr)
 
+# Need to open from project directory, not code directory
+
 # Set api login for CDS
 # need a key
 wf_set_key(user = "21600", service="cds")
