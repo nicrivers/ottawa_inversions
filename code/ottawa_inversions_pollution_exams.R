@@ -8,7 +8,7 @@ library(ecmwfr)
 
 # Set api login for CDS
 # need a key
-wf_set_key(user = "21600", service="cds")
+wf_set_key( service="cds")
 
 
 dat_levels <- tibble()
